@@ -19,6 +19,9 @@ module.exports = function (workoutController, authController) {
     workoutController.deleteWorkout(req, res)
   );
 
+  // Move workout to folder
+  router.put("/:id/move", (req, res) => workoutController.moveWorkout(req, res));
+
   // Get workout statistics
   router.get("/stats", (req, res) => workoutController.getStats(req, res));
 

@@ -7,6 +7,50 @@ class AuthController {
     this.JWT_SECRET = "your-secret-key-change-in-production";
   }
 
+  // Register new user
+  async register(req, res) {
+    try {
+      const { username, password } = req.body;
+
+      // Validate input
+      if (!username || !password) {
+        return res
+          .status(400)
+          .json({ error: "Username and password are required" });
+      }
+
+      if (password.length < 6) {
+        return res
+          .status(400)
+          .json({ error: "Password must be at least 6 characters long" });
+      }
+
+      // Check if user already exists
+      const existingUser = await this.userModel.findByUsername(username);
+      if (existingUser) {
+        return res.status(409).json({ error: "Username already exists" });
+      }
+
+      // Create new user
+      const user = await this.userModel.create(username, password);
+
+      // Generate JWT token
+      const token = jwt.sign(
+        { id: user.id, username: user.username },
+        this.JWT_SECRET,
+        { expiresIn: "24h" }
+      );
+
+      res.status(201).json({
+        token,
+        user: { id: user.id, username: user.username },
+      });
+    } catch (error) {
+      console.error("Registration error:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  }
+
   // Login user
   async login(req, res) {
     try {

@@ -9,16 +9,19 @@ const PrismaService = require("./config/prisma");
 const User = require("./models/User");
 const Workout = require("./models/Workout");
 const Exercise = require("./models/Exercise");
+const Folder = require("./models/Folder");
 
 // Import controllers
 const AuthController = require("./controllers/AuthController");
 const WorkoutController = require("./controllers/WorkoutController");
 const ExerciseController = require("./controllers/ExerciseController");
+const FolderController = require("./controllers/FolderController");
 
 // Import routes
 const authRoutes = require("./routes/auth");
 const workoutRoutes = require("./routes/workouts");
 const exerciseRoutes = require("./routes/exercises");
+const folderRoutes = require("./routes/folders");
 
 const app = express();
 const PORT = process.env.PORT || 5001;
@@ -41,6 +44,7 @@ async function initializeServer() {
     const userModel = new User(prisma);
     const workoutModel = new Workout(prisma);
     const exerciseModel = new Exercise(prisma);
+    const folderModel = new Folder(prisma);
 
     // Initialize controllers
     const authController = new AuthController(userModel);
@@ -52,9 +56,11 @@ async function initializeServer() {
       exerciseModel,
       workoutModel
     );
+    const folderController = new FolderController(folderModel);
 
     // Setup routes
     app.use("/api", authRoutes(authController));
+    app.use("/api/folders", folderRoutes(folderController, authController));
     app.use("/api/workouts", workoutRoutes(workoutController, authController));
     app.use("/api", exerciseRoutes(exerciseController, authController));
 

@@ -16,17 +16,32 @@ model User {
   password  String
   createdAt DateTime  @default(now()) @map("created_at")
   workouts  Workout[]
+  folders   Folder[]
 
   @@map("users")
+}
+
+model Folder {
+  id        Int       @id @default(autoincrement())
+  userId    Int       @map("user_id")
+  name      String
+  color     String?   @default("#3B82F6") // Default blue color
+  createdAt DateTime  @default(now()) @map("created_at")
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workouts  Workout[]
+
+  @@map("folders")
 }
 
 model Workout {
   id        Int        @id @default(autoincrement())
   userId    Int        @map("user_id")
+  folderId  Int?       @map("folder_id")
   name      String
   date      DateTime   @default(now())
   notes     String?
   user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  folder    Folder?    @relation(fields: [folderId], references: [id], onDelete: SetNull)
   exercises Exercise[]
 
   @@map("workouts")

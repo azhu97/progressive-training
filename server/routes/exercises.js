@@ -11,12 +11,12 @@ module.exports = function (exerciseController, authController) {
   );
 
   // Delete exercise
-  router.delete("/:id", (req, res) =>
+  router.delete("/exercises/:id", (req, res) =>
     exerciseController.deleteExercise(req, res)
   );
 
   // Update exercise
-  router.put("/:id", (req, res) => exerciseController.updateExercise(req, res));
+  router.put("/exercises/:id", (req, res) => exerciseController.updateExercise(req, res));
 
   return router;
 };

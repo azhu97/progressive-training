@@ -2,23 +2,78 @@ import React, { useState } from "react";
 import { Dumbbell, User, Lock } from "lucide-react";
 
 const Login = ({ onLogin }) => {
+  const [isLogin, setIsLogin] = useState(true);
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError("");
+    setSuccess("");
 
-    const result = await onLogin(username, password);
+    if (!isLogin && password !== confirmPassword) {
+      setError("Passwords do not match");
+      setLoading(false);
+      return;
+    }
 
-    if (!result.success) {
-      setError(result.error);
+    if (!isLogin && password.length < 6) {
+      setError("Password must be at least 6 characters long");
+      setLoading(false);
+      return;
+    }
+
+    const endpoint = isLogin ? "/api/login" : "/api/register";
+    const data = { username, password };
+
+    try {
+      const response = await fetch(endpoint, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(data),
+      });
+
+      const result = await response.json();
+
+      if (response.ok) {
+        if (isLogin) {
+          // Handle login success
+          const loginResult = await onLogin(username, password);
+          if (!loginResult.success) {
+            setError(loginResult.error);
+          }
+        } else {
+          // Handle registration success
+          setSuccess("Account created successfully! You can now log in.");
+          setIsLogin(true);
+          setUsername("");
+          setPassword("");
+          setConfirmPassword("");
+        }
+      } else {
+        setError(result.error || "An error occurred");
+      }
+    } catch (error) {
+      setError("Network error. Please try again.");
     }
 
     setLoading(false);
+  };
+
+  const toggleMode = () => {
+    setIsLogin(!isLogin);
+    setError("");
+    setSuccess("");
+    setUsername("");
+    setPassword("");
+    setConfirmPassword("");
   };
 
   return (
@@ -32,7 +87,7 @@ const Login = ({ onLogin }) => {
             Gym Workout Logger
           </h2>
           <p className="mt-2 text-sm text-gray-600">
-            Track your fitness journey with ease
+            {isLogin ? "Sign in to your account" : "Create your account"}
           </p>
         </div>
 
@@ -44,6 +99,12 @@ const Login = ({ onLogin }) => {
               </div>
             )}
 
+            {success && (
+              <div className="bg-green-50 border border-green-200 rounded-md p-4">
+                <p className="text-sm text-green-600">{success}</p>
+              </div>
+            )}
+
             <div>
               <label
                 htmlFor="username"
@@ -52,7 +113,7 @@ const Login = ({ onLogin }) => {
                 Username
               </label>
               <div className="mt-1 relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <div className="absolute inset-y-0 left-0 pl-2 flex items-center pointer-events-none">
                   <User className="h-5 w-5 text-gray-400" />
                 </div>
                 <input
@@ -62,7 +123,7 @@ const Login = ({ onLogin }) => {
                   required
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
-                  className="appearance-none relative block w-full pl-10 pr-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
+                  className="appearance-none relative block w-full pl-6 pr-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
                   placeholder="Enter your username"
                 />
               </div>
@@ -76,7 +137,7 @@ const Login = ({ onLogin }) => {
                 Password
               </label>
               <div className="mt-1 relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <div className="absolute inset-y-0 left-0 pl-2 flex items-center pointer-events-none">
                   <Lock className="h-5 w-5 text-gray-400" />
                 </div>
                 <input
@@ -86,11 +147,41 @@ const Login = ({ onLogin }) => {
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="appearance-none relative block w-full pl-10 pr-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
-                  placeholder="Enter your password"
+                  className="appearance-none relative block w-full pl-6 pr-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
+                  placeholder={
+                    isLogin
+                      ? "Enter your password"
+                      : "Create a password (min 6 characters)"
+                  }
                 />
               </div>
             </div>
+
+            {!isLogin && (
+              <div>
+                <label
+                  htmlFor="confirmPassword"
+                  className="block text-sm font-medium text-gray-700"
+                >
+                  Confirm Password
+                </label>
+                <div className="mt-1 relative">
+                  <div className="absolute inset-y-0 left-0 pl-2 flex items-center pointer-events-none">
+                    <Lock className="h-5 w-5 text-gray-400" />
+                  </div>
+                  <input
+                    id="confirmPassword"
+                    name="confirmPassword"
+                    type="password"
+                    required
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    className="appearance-none relative block w-full pl-6 pr-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
+                    placeholder="Confirm your password"
+                  />
+                </div>
+              </div>
+            )}
 
             <div>
               <button
@@ -101,20 +192,36 @@ const Login = ({ onLogin }) => {
                 {loading ? (
                   <div className="flex items-center">
                     <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                    Signing in...
+                    {isLogin ? "Signing in..." : "Creating account..."}
                   </div>
-                ) : (
+                ) : isLogin ? (
                   "Sign in"
+                ) : (
+                  "Create account"
                 )}
               </button>
             </div>
           </form>
 
-          <div className="mt-6 p-4 bg-blue-50 rounded-md">
-            <p className="text-xs text-blue-700">
-              <strong>Default login:</strong> admin / admin123
-            </p>
+          <div className="mt-6">
+            <button
+              type="button"
+              onClick={toggleMode}
+              className="w-full text-center text-sm text-blue-600 hover:text-blue-500 transition-colors duration-200"
+            >
+              {isLogin
+                ? "Don't have an account? Sign up"
+                : "Already have an account? Sign in"}
+            </button>
           </div>
+
+          {isLogin && (
+            <div className="mt-6 p-4 bg-blue-50 rounded-md">
+              <p className="text-xs text-blue-700">
+                <strong>Default login:</strong> admin / admin123
+              </p>
+            </div>
+          )}
         </div>
       </div>
     </div>

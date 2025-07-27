@@ -48,7 +48,10 @@ const WorkoutDetail = () => {
     setAdding(true);
 
     try {
-      await axios.post(`/api/workouts/${id}/exercises`, newExercise);
+      console.log("Adding exercise:", newExercise);
+      console.log("Request URL:", `/api/workouts/${id}/exercises`);
+      const response = await axios.post(`/api/workouts/${id}/exercises`, newExercise);
+      console.log("Response:", response.data);
       setNewExercise({
         name: "",
         sets: 3,
@@ -61,15 +64,14 @@ const WorkoutDetail = () => {
       fetchWorkout();
     } catch (error) {
       console.error("Error adding exercise:", error);
+      console.error("Error response:", error.response?.data);
+      console.error("Error status:", error.response?.status);
     } finally {
       setAdding(false);
     }
   };
 
   const handleDeleteExercise = async (exerciseId) => {
-    if (!window.confirm("Are you sure you want to delete this exercise?"))
-      return;
-
     try {
       await axios.delete(`/api/exercises/${exerciseId}`);
       fetchWorkout();
@@ -228,7 +230,7 @@ const WorkoutDetail = () => {
 
                       <div className="flex items-center space-x-2">
                         <Clock className="h-4 w-4 text-orange-600" />
-                        <span>{exercise.rest_time}s rest</span>
+                        <span>{exercise.rest_time || 60}s rest</span>
                       </div>
                     </div>
 

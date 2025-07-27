@@ -4,17 +4,19 @@ class Workout {
   }
 
   // Create a new workout
-  async create(userId, name, notes = null) {
+  async create(userId, name, notes = null, folderId = null) {
     return await this.prisma.workout.create({
       data: {
         userId: parseInt(userId),
         name,
         notes,
+        folderId: folderId ? parseInt(folderId) : null,
       },
       select: {
         id: true,
         name: true,
         notes: true,
+        folderId: true,
       },
     });
   }
@@ -27,6 +29,13 @@ class Workout {
       },
       include: {
         exercises: true,
+        folder: {
+          select: {
+            id: true,
+            name: true,
+            color: true,
+          },
+        },
       },
       orderBy: {
         date: "desc",
@@ -57,6 +66,13 @@ class Workout {
             id: "asc",
           },
         },
+        folder: {
+          select: {
+            id: true,
+            name: true,
+            color: true,
+          },
+        },
       },
     });
   }
@@ -70,6 +86,19 @@ class Workout {
       },
     });
     return { changes: result.count };
+  }
+
+  // Move workout to a different folder
+  async moveToFolder(workoutId, userId, folderId) {
+    return await this.prisma.workout.updateMany({
+      where: {
+        id: parseInt(workoutId),
+        userId: parseInt(userId),
+      },
+      data: {
+        folderId: folderId ? parseInt(folderId) : null,
+      },
+    });
   }
 
   // Get workout statistics for a user

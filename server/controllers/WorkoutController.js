@@ -18,13 +18,13 @@ class WorkoutController {
   // Create a new workout
   async createWorkout(req, res) {
     try {
-      const { name, notes } = req.body;
+      const { name, notes, folderId } = req.body;
 
       if (!name) {
         return res.status(400).json({ error: "Workout name is required" });
       }
 
-      const workout = await this.workoutModel.create(req.user.id, name, notes);
+      const workout = await this.workoutModel.create(req.user.id, name, notes, folderId);
       res.json(workout);
     } catch (error) {
       console.error("Error creating workout:", error);
@@ -65,6 +65,25 @@ class WorkoutController {
       res.json({ message: "Workout deleted successfully" });
     } catch (error) {
       console.error("Error deleting workout:", error);
+      res.status(500).json({ error: "Database error" });
+    }
+  }
+
+  // Move workout to a different folder
+  async moveWorkout(req, res) {
+    try {
+      const { id } = req.params;
+      const { folderId } = req.body;
+
+      const result = await this.workoutModel.moveToFolder(id, req.user.id, folderId);
+
+      if (result.count === 0) {
+        return res.status(404).json({ error: "Workout not found" });
+      }
+
+      res.json({ message: "Workout moved successfully" });
+    } catch (error) {
+      console.error("Error moving workout:", error);
       res.status(500).json({ error: "Database error" });
     }
   }
