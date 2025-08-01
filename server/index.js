@@ -1,9 +1,7 @@
 const express = require("express");
 const cors = require("cors");
 const path = require("path");
-const dotenv = require("dotenv");
-dotenv.config();
-console.log("JWT_SECRET ", process.env.JWT_SECRET);
+
 // Import Prisma service
 const PrismaService = require("./config/prisma");
 
