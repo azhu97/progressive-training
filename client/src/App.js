@@ -14,7 +14,7 @@ import "./App.css";
 
 // Set up axios defaults
 axios.defaults.baseURL =
-  process.env.REACT_APP_API_URL || "http://localhost:5001";
+  process.env.REACT_APP_API_URL || "http://localhost:6060";
 
 function App() {
   const [user, setUser] = useState(null);

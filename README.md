@@ -179,7 +179,7 @@ gym/
 npm run dev
 ```
 
-This starts the backend server (port 5001) with hot reloading.
+This starts the backend server (port 6060) with hot reloading.
 
 ### Database Management
 
