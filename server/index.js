@@ -1,6 +1,9 @@
 const express = require("express");
 const cors = require("cors");
 const path = require("path");
+const dotenv = require("dotenv");
+
+dotenv.config();
 
 // Import Prisma service
 const PrismaService = require("./config/prisma");
@@ -24,7 +27,7 @@ const exerciseRoutes = require("./routes/exercises");
 const folderRoutes = require("./routes/folders");
 
 const app = express();
-const PORT = process.env.PORT || 5001;
+const PORT = process.env.PORT || 5000;
 
 // Middleware
 app.use(cors());
