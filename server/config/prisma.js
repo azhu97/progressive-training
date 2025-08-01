@@ -13,9 +13,22 @@ class PrismaService {
   // Initialize database (create tables if they don't exist)
   async initialize() {
     try {
-      // Test the connection
-      await this.prisma.$connect();
-      console.log("Connected to database via Prisma");
+      // Test the connection with retry logic
+      let retries = 3;
+      while (retries > 0) {
+        try {
+          await this.prisma.$connect();
+          console.log("Connected to database via Prisma");
+          break;
+        } catch (error) {
+          retries--;
+          if (retries === 0) {
+            throw error;
+          }
+          console.log(`Database connection failed, retrying... (${retries} attempts left)`);
+          await new Promise(resolve => setTimeout(resolve, 1000));
+        }
+      }
 
       // Create default user if none exists
       await this.createDefaultUser();
