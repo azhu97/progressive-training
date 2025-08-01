@@ -8,14 +8,14 @@ const Navbar = ({ user, onLogout }) => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16">
           <div className="flex items-center">
-            <Link to="/" className="flex items-center space-x-2">
+            <div className="flex items-center space-x-2">
               <div className="h-8 w-8 bg-blue-600 rounded-lg flex items-center justify-center">
                 <Dumbbell className="h-5 w-5 text-white" />
               </div>
               <span className="text-xl font-bold text-gray-900">
                 Gym Logger
               </span>
-            </Link>
+            </div>
           </div>
 
           <div className="flex items-center space-x-4">
