@@ -54,7 +54,7 @@ const Dashboard = () => {
 
     try {
       await axios.post("/api/workouts", newWorkout);
-      setNewWorkout({ name: "", notes: "" });
+      setNewWorkout({ name: "", notes: "", folderId: null });
       setShowCreateModal(false);
       fetchData();
     } catch (error) {
@@ -86,6 +86,15 @@ const Dashboard = () => {
     }
   };
 
+  const handleNewWorkoutClick = () => {
+    setNewWorkout({
+      name: "",
+      notes: "",
+      folderId: selectedFolderId,
+    });
+    setShowCreateModal(true);
+  };
+
   const filteredWorkouts =
     selectedFolderId === null
       ? workouts
@@ -115,7 +124,7 @@ const Dashboard = () => {
       {/* Main Content */}
       <div className="lg:col-span-3 space-y-6">
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <div className="stats-card rounded-lg p-6 text-white">
             <div className="flex items-center justify-between">
               <div>
@@ -169,7 +178,7 @@ const Dashboard = () => {
         <div className="flex justify-between items-center">
           <h1 className="text-2xl font-bold text-gray-900">Your Workouts</h1>
           <button
-            onClick={() => setShowCreateModal(true)}
+            onClick={handleNewWorkoutClick}
             className="btn-primary flex items-center space-x-2"
           >
             <Plus className="h-4 w-4" />
@@ -282,94 +291,90 @@ const Dashboard = () => {
             <p className="text-gray-500 mb-6">
               Start your fitness journey by creating your first workout!
             </p>
-            <button
-              onClick={() => setShowCreateModal(true)}
-              className="btn-primary"
-            >
+            <button onClick={handleNewWorkoutClick} className="btn-primary">
               Create Your First Workout
             </button>
           </div>
         )}
-
-        {/* Create Workout Modal */}
-        {showCreateModal && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-lg p-6 w-full max-w-md">
-              <h2 className="text-xl font-bold mb-4">Create New Workout</h2>
-
-              <form onSubmit={handleCreateWorkout} className="space-y-4">
-                <div>
-                  <label className="form-label">Workout Name</label>
-                  <input
-                    type="text"
-                    value={newWorkout.name}
-                    onChange={(e) =>
-                      setNewWorkout({ ...newWorkout, name: e.target.value })
-                    }
-                    className="form-input"
-                    placeholder="e.g., Upper Body, Leg Day"
-                    required
-                  />
-                </div>
-
-                <div>
-                  <label className="form-label">Notes (Optional)</label>
-                  <textarea
-                    value={newWorkout.notes}
-                    onChange={(e) =>
-                      setNewWorkout({ ...newWorkout, notes: e.target.value })
-                    }
-                    className="form-input"
-                    rows="3"
-                    placeholder="Any notes about this workout..."
-                  />
-                </div>
-
-                <div>
-                  <label className="form-label">Folder (Optional)</label>
-                  <select
-                    value={newWorkout.folderId || ""}
-                    onChange={(e) =>
-                      setNewWorkout({
-                        ...newWorkout,
-                        folderId: e.target.value
-                          ? parseInt(e.target.value)
-                          : null,
-                      })
-                    }
-                    className="form-input"
-                  >
-                    <option value="">No folder</option>
-                    {folders.map((folder) => (
-                      <option key={folder.id} value={folder.id}>
-                        {folder.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="flex space-x-3 pt-4">
-                  <button
-                    type="button"
-                    onClick={() => setShowCreateModal(false)}
-                    className="btn-secondary flex-1"
-                    disabled={creating}
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    className="btn-primary flex-1"
-                    disabled={creating}
-                  >
-                    {creating ? "Creating..." : "Create Workout"}
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
-        )}
       </div>
+
+      {/* Create Workout Modal */}
+      {showCreateModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-[9999]">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md">
+            <h2 className="text-xl font-bold mb-4">Create New Workout</h2>
+            <form onSubmit={handleCreateWorkout} className="space-y-4">
+              <div>
+                <label className="form-label">Workout Name</label>
+                <input
+                  type="text"
+                  value={newWorkout.name}
+                  onChange={(e) =>
+                    setNewWorkout({ ...newWorkout, name: e.target.value })
+                  }
+                  className="form-input"
+                  placeholder="e.g., Upper Body, Leg Day"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="form-label">Notes (Optional)</label>
+                <textarea
+                  value={newWorkout.notes}
+                  onChange={(e) =>
+                    setNewWorkout({ ...newWorkout, notes: e.target.value })
+                  }
+                  className="form-input"
+                  rows="3"
+                  placeholder="Any notes about this workout..."
+                />
+              </div>
+
+              <div>
+                <label className="form-label">Folder (Optional)</label>
+                <select
+                  value={newWorkout.folderId || ""}
+                  onChange={(e) =>
+                    setNewWorkout({
+                      ...newWorkout,
+                      folderId: e.target.value
+                        ? parseInt(e.target.value)
+                        : null,
+                    })
+                  }
+                  className="form-input"
+                >
+                  <option value="">No folder</option>
+                  {folders.map((folder) => (
+                    <option key={folder.id} value={folder.id}>
+                      {folder.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="flex space-x-3 pt-4">
+                <button
+                  type="button"
+                  onClick={() => setShowCreateModal(false)}
+                  className="btn-secondary flex-1"
+                  disabled={creating}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="btn-primary flex-1"
+                  disabled={creating}
+                >
+                  {creating ? "Creating..." : "Create Workout"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
