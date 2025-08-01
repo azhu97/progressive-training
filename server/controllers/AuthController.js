@@ -1,10 +1,12 @@
 const jwt = require("jsonwebtoken");
 const User = require("../models/User");
+const dotenv = require("dotenv");
+dotenv.config();
 
 class AuthController {
   constructor(userModel) {
     this.userModel = userModel;
-    this.JWT_SECRET = "Z3c4Fv8vK2x3N7tQ9rMp2AjL6rX5Dz0qTeY1VbUzXsY4WjCkBmLuPnGrHoSiTyZ9";
+    this.JWT_SECRET = process.env.JWT_SECRET;
   }
 
   // Register new user
