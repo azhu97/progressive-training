@@ -4,7 +4,7 @@ const User = require("../models/User");
 class AuthController {
   constructor(userModel) {
     this.userModel = userModel;
-    this.JWT_SECRET = "your-secret-key-change-in-production";
+    this.JWT_SECRET = "Z3c4Fv8vK2x3N7tQ9rMp2AjL6rX5Dz0qTeY1VbUzXsY4WjCkBmLuPnGrHoSiTyZ9";
   }
 
   // Register new user
