@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import axios from "axios";
 import {
   Plus,
@@ -14,6 +14,7 @@ import { format } from "date-fns";
 import FolderManager from "./FolderManager";
 
 const Dashboard = () => {
+  const location = useLocation();
   const [workouts, setWorkouts] = useState([]);
   const [stats, setStats] = useState({});
   const [loading, setLoading] = useState(true);
@@ -29,20 +30,24 @@ const Dashboard = () => {
 
   useEffect(() => {
     fetchData();
-  }, []);
+  }, [location.pathname]); // Refresh when location changes (e.g., returning from workout detail)
 
   const fetchData = async () => {
     try {
       const [workoutsRes, statsRes, foldersRes] = await Promise.all([
         axios.get("/api/workouts"),
-        axios.get("/api/stats"),
+        axios.get("/api/workouts/stats"),
         axios.get("/api/folders"),
       ]);
+
       setWorkouts(workoutsRes.data);
       setStats(statsRes.data);
       setFolders(foldersRes.data);
     } catch (error) {
       console.error("Error fetching data:", error);
+      if (error.response) {
+        console.error("Error response:", error.response.data);
+      }
     } finally {
       setLoading(false);
     }

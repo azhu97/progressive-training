@@ -11,6 +11,9 @@ module.exports = function (workoutController, authController) {
   // Create new workout
   router.post("/", (req, res) => workoutController.createWorkout(req, res));
 
+  // Get workout statistics
+  router.get("/stats", (req, res) => workoutController.getStats(req, res));
+
   // Get specific workout
   router.get("/:id", (req, res) => workoutController.getWorkout(req, res));
 
@@ -20,10 +23,9 @@ module.exports = function (workoutController, authController) {
   );
 
   // Move workout to folder
-  router.put("/:id/move", (req, res) => workoutController.moveWorkout(req, res));
-
-  // Get workout statistics
-  router.get("/stats", (req, res) => workoutController.getStats(req, res));
+  router.put("/:id/move", (req, res) =>
+    workoutController.moveWorkout(req, res)
+  );
 
   return router;
 };
