@@ -4,6 +4,7 @@ import { Search, X, ChevronDown } from "lucide-react";
 const ExerciseSearch = ({ onSelect, placeholder = "Search exercises..." }) => {
   const [query, setQuery] = useState("");
   const [isOpen, setIsOpen] = useState(false);
+  const [isFocused, setIsFocused] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(-1);
   const [filteredExercises, setFilteredExercises] = useState([]);
   const inputRef = useRef(null);
@@ -162,16 +163,20 @@ const ExerciseSearch = ({ onSelect, placeholder = "Search exercises..." }) => {
       setIsOpen(true);
       setSelectedIndex(-1);
     } else {
-      setFilteredExercises([]);
-      setIsOpen(false);
+      // Show all exercises when query is empty and input is focused
+      setFilteredExercises(exerciseDatabase.slice(0, 20)); // Show first 20 exercises
+      setSelectedIndex(-1);
     }
   }, [query]);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
-        setIsOpen(false);
+      // Don't close if clicking inside the dropdown
+      if (dropdownRef.current && dropdownRef.current.contains(event.target)) {
+        return;
       }
+      setIsOpen(false);
+      setIsFocused(false);
     };
 
     document.addEventListener("mousedown", handleClickOutside);
@@ -200,6 +205,8 @@ const ExerciseSearch = ({ onSelect, placeholder = "Search exercises..." }) => {
   const handleSelect = (exercise) => {
     setQuery(exercise.name);
     setIsOpen(false);
+    setIsFocused(false);
+    setSelectedIndex(-1);
     onSelect(exercise.name);
   };
 
@@ -221,7 +228,14 @@ const ExerciseSearch = ({ onSelect, placeholder = "Search exercises..." }) => {
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           onKeyDown={handleKeyDown}
-          onFocus={() => query.length > 0 && setIsOpen(true)}
+          onFocus={() => {
+            setIsFocused(true);
+            setIsOpen(true);
+          }}
+          onBlur={() => {
+            // Don't immediately close on blur to allow clicking on dropdown items
+            // The click outside handler will handle closing
+          }}
           className="w-full pl-10 pr-10 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           placeholder={placeholder}
         />
@@ -235,8 +249,13 @@ const ExerciseSearch = ({ onSelect, placeholder = "Search exercises..." }) => {
         )}
       </div>
 
-      {isOpen && filteredExercises.length > 0 && (
+      {isOpen && isFocused && filteredExercises.length > 0 && (
         <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-auto">
+          {query.length === 0 && (
+            <div className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-50 border-b border-gray-200">
+              Popular Exercises
+            </div>
+          )}
           {filteredExercises.map((exercise, index) => (
             <div
               key={`${exercise.name}-${index}`}
@@ -254,13 +273,16 @@ const ExerciseSearch = ({ onSelect, placeholder = "Search exercises..." }) => {
         </div>
       )}
 
-      {isOpen && query.length > 0 && filteredExercises.length === 0 && (
-        <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg">
-          <div className="px-4 py-2 text-gray-500">
-            No exercises found. Try a different search term.
+      {isOpen &&
+        isFocused &&
+        query.length > 0 &&
+        filteredExercises.length === 0 && (
+          <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg">
+            <div className="px-4 py-2 text-gray-500">
+              No exercises found. Try a different search term.
+            </div>
           </div>
-        </div>
-      )}
+        )}
     </div>
   );
 };
