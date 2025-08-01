@@ -27,10 +27,23 @@ const Dashboard = () => {
   const [creating, setCreating] = useState(false);
   const [selectedFolderId, setSelectedFolderId] = useState(null);
   const [folders, setFolders] = useState([]);
+  const [openMoveDropdown, setOpenMoveDropdown] = useState(null);
 
   useEffect(() => {
     fetchData();
   }, [location.pathname]); // Refresh when location changes (e.g., returning from workout detail)
+
+  // Close move dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (!event.target.closest(".move-dropdown")) {
+        setOpenMoveDropdown(null);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   const fetchData = async () => {
     try {
@@ -85,6 +98,7 @@ const Dashboard = () => {
   const handleMoveWorkout = async (workoutId, folderId) => {
     try {
       await axios.put(`/api/workouts/${workoutId}/move`, { folderId });
+      setOpenMoveDropdown(null); // Close dropdown after moving
       fetchData();
     } catch (error) {
       console.error("Error moving workout:", error);
@@ -213,36 +227,45 @@ const Dashboard = () => {
                   )}
                 </div>
                 <div className="flex space-x-2">
-                  <div className="relative group">
-                    <button className="p-1 text-gray-600 hover:text-gray-700 transition-colors">
+                  <div className="relative move-dropdown">
+                    <button
+                      onClick={() =>
+                        setOpenMoveDropdown(
+                          openMoveDropdown === workout.id ? null : workout.id
+                        )
+                      }
+                      className="p-1 text-gray-600 hover:text-gray-700 transition-colors"
+                    >
                       <Move className="h-4 w-4" />
                     </button>
-                    <div className="absolute right-0 top-8 bg-white border border-gray-200 rounded-lg shadow-lg py-2 z-10 hidden group-hover:block min-w-32">
-                      <div className="px-3 py-1 text-xs text-gray-500 border-b border-gray-100">
-                        Move to folder:
-                      </div>
-                      <button
-                        onClick={() => handleMoveWorkout(workout.id, null)}
-                        className="block w-full text-left px-3 py-2 text-sm hover:bg-gray-50"
-                      >
-                        No folder
-                      </button>
-                      {folders.map((folder) => (
+                    {openMoveDropdown === workout.id && (
+                      <div className="absolute right-0 top-8 bg-white border border-gray-200 rounded-lg shadow-lg py-2 z-10 min-w-32">
+                        <div className="px-3 py-1 text-xs text-gray-500 border-b border-gray-100">
+                          Move to folder:
+                        </div>
                         <button
-                          key={folder.id}
-                          onClick={() =>
-                            handleMoveWorkout(workout.id, folder.id)
-                          }
-                          className="block w-full text-left px-3 py-2 text-sm hover:bg-gray-50 flex items-center gap-2"
+                          onClick={() => handleMoveWorkout(workout.id, null)}
+                          className="block w-full text-left px-3 py-2 text-sm hover:bg-gray-50"
                         >
-                          <div
-                            className="w-3 h-3 rounded-full"
-                            style={{ backgroundColor: folder.color }}
-                          />
-                          {folder.name}
+                          No folder
                         </button>
-                      ))}
-                    </div>
+                        {folders.map((folder) => (
+                          <button
+                            key={folder.id}
+                            onClick={() =>
+                              handleMoveWorkout(workout.id, folder.id)
+                            }
+                            className="block w-full text-left px-3 py-2 text-sm hover:bg-gray-50 flex items-center gap-2"
+                          >
+                            <div
+                              className="w-3 h-3 rounded-full"
+                              style={{ backgroundColor: folder.color }}
+                            />
+                            {folder.name}
+                          </button>
+                        ))}
+                      </div>
+                    )}
                   </div>
                   <Link
                     to={`/workout/${workout.id}`}
