@@ -1,8 +1,13 @@
 import React, { useState, useEffect } from "react";
 import { Folder, Plus, Edit, Trash2, X } from "lucide-react";
 
-const FolderManager = ({ onFolderSelect, selectedFolderId }) => {
-  const [folders, setFolders] = useState([]);
+const FolderManager = ({
+  onFolderSelect,
+  selectedFolderId,
+  folders = [],
+  onFoldersUpdate,
+  totalWorkouts = 0,
+}) => {
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [showEditForm, setShowEditForm] = useState(false);
   const [editingFolder, setEditingFolder] = useState(null);
@@ -24,27 +29,6 @@ const FolderManager = ({ onFolderSelect, selectedFolderId }) => {
     "#6B7280", // Gray
   ];
 
-  useEffect(() => {
-    fetchFolders();
-  }, []);
-
-  const fetchFolders = async () => {
-    try {
-      const token = localStorage.getItem("token");
-      const response = await fetch("/api/folders", {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-      if (response.ok) {
-        const data = await response.json();
-        setFolders(data);
-      }
-    } catch (error) {
-      console.error("Error fetching folders:", error);
-    }
-  };
-
   const handleCreateFolder = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -63,7 +47,9 @@ const FolderManager = ({ onFolderSelect, selectedFolderId }) => {
 
       if (response.ok) {
         const newFolder = await response.json();
-        setFolders([newFolder, ...folders]);
+        if (onFoldersUpdate) {
+          onFoldersUpdate();
+        }
         setFormData({ name: "", color: "#3B82F6" });
         setShowCreateForm(false);
       } else {
@@ -94,13 +80,9 @@ const FolderManager = ({ onFolderSelect, selectedFolderId }) => {
       });
 
       if (response.ok) {
-        setFolders(
-          folders.map((folder) =>
-            folder.id === editingFolder.id
-              ? { ...folder, name: formData.name, color: formData.color }
-              : folder
-          )
-        );
+        if (onFoldersUpdate) {
+          onFoldersUpdate();
+        }
         setFormData({ name: "", color: "#3B82F6" });
         setShowEditForm(false);
         setEditingFolder(null);
@@ -126,7 +108,9 @@ const FolderManager = ({ onFolderSelect, selectedFolderId }) => {
       });
 
       if (response.ok) {
-        setFolders(folders.filter((folder) => folder.id !== folderId));
+        if (onFoldersUpdate) {
+          onFoldersUpdate();
+        }
         if (selectedFolderId === folderId) {
           onFolderSelect(null);
         }
@@ -314,10 +298,7 @@ const FolderManager = ({ onFolderSelect, selectedFolderId }) => {
           <Folder className="h-5 w-5 text-gray-500" />
           <span className="font-medium">All Workouts</span>
           <span className="ml-auto text-sm text-gray-500">
-            {folders.reduce(
-              (total, folder) => total + folder.workouts.length,
-              0
-            )}
+            {totalWorkouts}
           </span>
         </button>
 
