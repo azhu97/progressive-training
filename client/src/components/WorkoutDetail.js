@@ -9,6 +9,7 @@ import {
   Clock,
   Scale,
   Repeat,
+  Edit,
 } from "lucide-react";
 import { format } from "date-fns";
 import ExerciseSearch from "./ExerciseSearch";
@@ -18,6 +19,8 @@ const WorkoutDetail = () => {
   const [workout, setWorkout] = useState(null);
   const [loading, setLoading] = useState(true);
   const [showAddExercise, setShowAddExercise] = useState(false);
+  const [showEditExercise, setShowEditExercise] = useState(false);
+  const [editingExercise, setEditingExercise] = useState(null);
   const [newExercise, setNewExercise] = useState({
     name: "",
     sets: 3,
@@ -27,6 +30,7 @@ const WorkoutDetail = () => {
     notes: "",
   });
   const [adding, setAdding] = useState(false);
+  const [editing, setEditing] = useState(false);
 
   useEffect(() => {
     fetchWorkout();
@@ -72,6 +76,35 @@ const WorkoutDetail = () => {
       fetchWorkout();
     } catch (error) {
       console.error("Error deleting exercise:", error);
+    }
+  };
+
+  const handleEditExercise = (exercise) => {
+    setEditingExercise({
+      id: exercise.id,
+      name: exercise.name,
+      sets: exercise.sets,
+      reps: exercise.reps,
+      weight: exercise.weight || "",
+      rest_time: exercise.rest_time || 60,
+      notes: exercise.notes || "",
+    });
+    setShowEditExercise(true);
+  };
+
+  const handleUpdateExercise = async (e) => {
+    e.preventDefault();
+    setEditing(true);
+
+    try {
+      await axios.put(`/api/exercises/${editingExercise.id}`, editingExercise);
+      setEditingExercise(null);
+      setShowEditExercise(false);
+      fetchWorkout();
+    } catch (error) {
+      console.error("Error updating exercise:", error);
+    } finally {
+      setEditing(false);
     }
   };
 
@@ -150,8 +183,10 @@ const WorkoutDetail = () => {
               <div>
                 <p className="text-sm text-gray-600">Total Sets</p>
                 <p className="text-xl font-bold">
-                  {workout.exercises?.reduce((total, ex) => total + ex.sets, 0) ||
-                    0}
+                  {workout.exercises?.reduce(
+                    (total, ex) => total + ex.sets,
+                    0
+                  ) || 0}
                 </p>
               </div>
             </div>
@@ -236,12 +271,20 @@ const WorkoutDetail = () => {
                       )}
                     </div>
 
-                    <button
-                      onClick={() => handleDeleteExercise(exercise.id)}
-                      className="p-2 text-red-600 hover:text-red-700 hover:bg-red-50 rounded-md transition-colors"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </button>
+                    <div className="flex space-x-2">
+                      <button
+                        onClick={() => handleEditExercise(exercise)}
+                        className="p-2 text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-md transition-colors"
+                      >
+                        <Edit className="h-4 w-4" />
+                      </button>
+                      <button
+                        onClick={() => handleDeleteExercise(exercise.id)}
+                        className="p-2 text-red-600 hover:text-red-700 hover:bg-red-50 rounded-md transition-colors"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
                   </div>
                 </div>
               ))}
@@ -367,6 +410,133 @@ const WorkoutDetail = () => {
                   disabled={adding}
                 >
                   {adding ? "Adding..." : "Add Exercise"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Exercise Modal */}
+      {showEditExercise && editingExercise && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-[9999]">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md max-h-[90vh] overflow-y-auto">
+            <h2 className="text-xl font-bold mb-4">Edit Exercise</h2>
+
+            <form onSubmit={handleUpdateExercise} className="space-y-4">
+              <div>
+                <label className="form-label">Exercise Name</label>
+                <ExerciseSearch
+                  onSelect={(name) =>
+                    setEditingExercise({ ...editingExercise, name })
+                  }
+                  placeholder="Search for exercises..."
+                  value={editingExercise.name}
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="form-label">Sets</label>
+                  <input
+                    type="number"
+                    value={editingExercise.sets}
+                    onChange={(e) =>
+                      setEditingExercise({
+                        ...editingExercise,
+                        sets: parseInt(e.target.value),
+                      })
+                    }
+                    className="form-input"
+                    min="1"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="form-label">Reps</label>
+                  <input
+                    type="number"
+                    value={editingExercise.reps}
+                    onChange={(e) =>
+                      setEditingExercise({
+                        ...editingExercise,
+                        reps: parseInt(e.target.value),
+                      })
+                    }
+                    className="form-input"
+                    min="1"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="form-label">Weight (lbs)</label>
+                  <input
+                    type="number"
+                    value={editingExercise.weight}
+                    onChange={(e) =>
+                      setEditingExercise({
+                        ...editingExercise,
+                        weight: e.target.value,
+                      })
+                    }
+                    className="form-input"
+                    placeholder="Optional"
+                  />
+                </div>
+
+                <div>
+                  <label className="form-label">Rest Time (seconds)</label>
+                  <input
+                    type="number"
+                    value={editingExercise.rest_time}
+                    onChange={(e) =>
+                      setEditingExercise({
+                        ...editingExercise,
+                        rest_time: parseInt(e.target.value),
+                      })
+                    }
+                    className="form-input"
+                    min="0"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="form-label">Notes (Optional)</label>
+                <textarea
+                  value={editingExercise.notes}
+                  onChange={(e) =>
+                    setEditingExercise({
+                      ...editingExercise,
+                      notes: e.target.value,
+                    })
+                  }
+                  className="form-input"
+                  rows="3"
+                  placeholder="Any notes about this exercise..."
+                />
+              </div>
+
+              <div className="flex space-x-3 pt-4">
+                <button
+                  type="button"
+                  onClick={() => setShowEditExercise(false)}
+                  className="btn-secondary flex-1"
+                  disabled={editing}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="btn-primary flex-1"
+                  disabled={editing}
+                >
+                  {editing ? "Saving..." : "Save Changes"}
                 </button>
               </div>
             </form>

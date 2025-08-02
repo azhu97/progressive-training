@@ -114,6 +114,8 @@ const Dashboard = () => {
     setShowCreateModal(true);
   };
 
+
+
   const filteredWorkouts =
     selectedFolderId === null
       ? workouts

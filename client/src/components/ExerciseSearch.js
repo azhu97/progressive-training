@@ -1,14 +1,23 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Search, X, ChevronDown } from "lucide-react";
 
-const ExerciseSearch = ({ onSelect, placeholder = "Search exercises..." }) => {
-  const [query, setQuery] = useState("");
+const ExerciseSearch = ({
+  onSelect,
+  placeholder = "Search exercises...",
+  value = "",
+}) => {
+  const [query, setQuery] = useState(value);
   const [isOpen, setIsOpen] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(-1);
   const [filteredExercises, setFilteredExercises] = useState([]);
   const inputRef = useRef(null);
   const dropdownRef = useRef(null);
+
+  // Update query when value prop changes (for controlled input)
+  useEffect(() => {
+    setQuery(value);
+  }, [value]);
 
   // Common gym exercises database
   const exerciseDatabase = [
