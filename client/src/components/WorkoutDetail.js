@@ -491,11 +491,11 @@ const WorkoutDetail = () => {
                                 handleEditField(
                                   exercise.id,
                                   "rest_time",
-                                  exercise.rest_time || 60
+                                  exercise.restTime || 60
                                 )
                               }
                             >
-                              {exercise.rest_time || 60}s rest
+                              {exercise.restTime || 60}s rest
                             </span>
                           )}
                         </div>
