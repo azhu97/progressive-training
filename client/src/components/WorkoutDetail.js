@@ -9,7 +9,8 @@ import {
   Clock,
   Scale,
   Repeat,
-  Edit,
+  Check,
+  X,
 } from "lucide-react";
 import { format } from "date-fns";
 import ExerciseSearch from "./ExerciseSearch";
@@ -19,8 +20,6 @@ const WorkoutDetail = () => {
   const [workout, setWorkout] = useState(null);
   const [loading, setLoading] = useState(true);
   const [showAddExercise, setShowAddExercise] = useState(false);
-  const [showEditExercise, setShowEditExercise] = useState(false);
-  const [editingExercise, setEditingExercise] = useState(null);
   const [newExercise, setNewExercise] = useState({
     name: "",
     sets: 3,
@@ -30,7 +29,8 @@ const WorkoutDetail = () => {
     notes: "",
   });
   const [adding, setAdding] = useState(false);
-  const [editing, setEditing] = useState(false);
+  const [editingField, setEditingField] = useState(null); // { exerciseId, field, value }
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     fetchWorkout();
@@ -79,32 +79,60 @@ const WorkoutDetail = () => {
     }
   };
 
-  const handleEditExercise = (exercise) => {
-    setEditingExercise({
-      id: exercise.id,
-      name: exercise.name,
-      sets: exercise.sets,
-      reps: exercise.reps,
-      weight: exercise.weight || "",
-      rest_time: exercise.rest_time || 60,
-      notes: exercise.notes || "",
+  const handleEditField = (exerciseId, field, currentValue) => {
+    setEditingField({
+      exerciseId,
+      field,
+      value: currentValue || "",
     });
-    setShowEditExercise(true);
   };
 
-  const handleUpdateExercise = async (e) => {
-    e.preventDefault();
-    setEditing(true);
+  const handleSaveField = async () => {
+    if (!editingField) return;
 
+    setSaving(true);
     try {
-      await axios.put(`/api/exercises/${editingExercise.id}`, editingExercise);
-      setEditingExercise(null);
-      setShowEditExercise(false);
+      const exercise = workout.exercises.find(
+        (ex) => ex.id === editingField.exerciseId
+      );
+      if (!exercise) return;
+
+      const updatedExercise = {
+        ...exercise,
+        [editingField.field]:
+          editingField.field === "sets" ||
+          editingField.field === "reps" ||
+          editingField.field === "rest_time"
+            ? parseInt(editingField.value)
+            : editingField.value,
+      };
+
+      await axios.put(
+        `/api/exercises/${editingField.exerciseId}`,
+        updatedExercise
+      );
+      setEditingField(null);
       fetchWorkout();
     } catch (error) {
       console.error("Error updating exercise:", error);
     } finally {
-      setEditing(false);
+      setSaving(false);
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setEditingField(null);
+  };
+
+  const handleInputChange = (value) => {
+    setEditingField((prev) => ({ ...prev, value }));
+  };
+
+  const handleKeyPress = (e) => {
+    if (e.key === "Enter") {
+      handleSaveField();
+    } else if (e.key === "Escape") {
+      handleCancelEdit();
     }
   };
 
@@ -240,51 +268,302 @@ const WorkoutDetail = () => {
                   <div className="flex justify-between items-start">
                     <div className="flex-1">
                       <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                        {index + 1}. {exercise.name}
+                        {index + 1}.{" "}
+                        {editingField?.exerciseId === exercise.id &&
+                        editingField?.field === "name" ? (
+                          <div className="flex items-center space-x-1">
+                            <ExerciseSearch
+                              onSelect={(name) => handleInputChange(name)}
+                              placeholder="Search for exercises..."
+                              value={editingField.value}
+                            />
+                            <button
+                              onClick={handleSaveField}
+                              className="p-1 text-green-600 hover:text-green-700"
+                              disabled={saving}
+                            >
+                              <Check className="h-4 w-4" />
+                            </button>
+                            <button
+                              onClick={handleCancelEdit}
+                              className="p-1 text-red-600 hover:text-red-700"
+                            >
+                              <X className="h-4 w-4" />
+                            </button>
+                          </div>
+                        ) : (
+                          <span
+                            className="cursor-pointer hover:bg-blue-50 px-2 py-1 rounded transition-colors"
+                            onClick={() =>
+                              handleEditField(
+                                exercise.id,
+                                "name",
+                                exercise.name
+                              )
+                            }
+                          >
+                            {exercise.name}
+                          </span>
+                        )}
                       </h3>
 
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                         <div className="flex items-center space-x-2">
                           <Repeat className="h-4 w-4 text-blue-600" />
-                          <span>{exercise.sets} sets</span>
+                          {editingField?.exerciseId === exercise.id &&
+                          editingField?.field === "sets" ? (
+                            <div className="flex items-center space-x-1">
+                              <input
+                                type="number"
+                                value={editingField.value}
+                                onChange={(e) =>
+                                  handleInputChange(e.target.value)
+                                }
+                                onKeyDown={handleKeyPress}
+                                onBlur={handleSaveField}
+                                className="w-16 px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                min="1"
+                                autoFocus
+                              />
+                              <button
+                                onClick={handleSaveField}
+                                className="p-1 text-green-600 hover:text-green-700"
+                                disabled={saving}
+                              >
+                                <Check className="h-3 w-3" />
+                              </button>
+                              <button
+                                onClick={handleCancelEdit}
+                                className="p-1 text-red-600 hover:text-red-700"
+                              >
+                                <X className="h-3 w-3" />
+                              </button>
+                            </div>
+                          ) : (
+                            <span
+                              className="cursor-pointer hover:bg-blue-50 px-2 py-1 rounded transition-colors"
+                              onClick={() =>
+                                handleEditField(
+                                  exercise.id,
+                                  "sets",
+                                  exercise.sets
+                                )
+                              }
+                            >
+                              {exercise.sets} sets
+                            </span>
+                          )}
                         </div>
+
                         <div className="flex items-center space-x-2">
                           <Activity className="h-4 w-4 text-green-600" />
-                          <span>{exercise.reps} reps</span>
+                          {editingField?.exerciseId === exercise.id &&
+                          editingField?.field === "reps" ? (
+                            <div className="flex items-center space-x-1">
+                              <input
+                                type="number"
+                                value={editingField.value}
+                                onChange={(e) =>
+                                  handleInputChange(e.target.value)
+                                }
+                                onKeyDown={handleKeyPress}
+                                onBlur={handleSaveField}
+                                className="w-16 px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                min="1"
+                                autoFocus
+                              />
+                              <button
+                                onClick={handleSaveField}
+                                className="p-1 text-green-600 hover:text-green-700"
+                                disabled={saving}
+                              >
+                                <Check className="h-3 w-3" />
+                              </button>
+                              <button
+                                onClick={handleCancelEdit}
+                                className="p-1 text-red-600 hover:text-red-700"
+                              >
+                                <X className="h-3 w-3" />
+                              </button>
+                            </div>
+                          ) : (
+                            <span
+                              className="cursor-pointer hover:bg-blue-50 px-2 py-1 rounded transition-colors"
+                              onClick={() =>
+                                handleEditField(
+                                  exercise.id,
+                                  "reps",
+                                  exercise.reps
+                                )
+                              }
+                            >
+                              {exercise.reps} reps
+                            </span>
+                          )}
                         </div>
-                        {exercise.weight && (
-                          <div className="flex items-center space-x-2">
-                            <Scale className="h-4 w-4 text-purple-600" />
-                            <span>{exercise.weight} lbs</span>
-                          </div>
-                        )}
+
+                        <div className="flex items-center space-x-2">
+                          <Scale className="h-4 w-4 text-purple-600" />
+                          {editingField?.exerciseId === exercise.id &&
+                          editingField?.field === "weight" ? (
+                            <div className="flex items-center space-x-1">
+                              <input
+                                type="number"
+                                value={editingField.value}
+                                onChange={(e) =>
+                                  handleInputChange(e.target.value)
+                                }
+                                onKeyDown={handleKeyPress}
+                                onBlur={handleSaveField}
+                                className="w-20 px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                placeholder="0"
+                                autoFocus
+                              />
+                              <span className="text-xs text-gray-500">lbs</span>
+                              <button
+                                onClick={handleSaveField}
+                                className="p-1 text-green-600 hover:text-green-700"
+                                disabled={saving}
+                              >
+                                <Check className="h-3 w-3" />
+                              </button>
+                              <button
+                                onClick={handleCancelEdit}
+                                className="p-1 text-red-600 hover:text-red-700"
+                              >
+                                <X className="h-3 w-3" />
+                              </button>
+                            </div>
+                          ) : (
+                            <span
+                              className="cursor-pointer hover:bg-blue-50 px-2 py-1 rounded transition-colors"
+                              onClick={() =>
+                                handleEditField(
+                                  exercise.id,
+                                  "weight",
+                                  exercise.weight
+                                )
+                              }
+                            >
+                              {exercise.weight
+                                ? `${exercise.weight} lbs`
+                                : "Add weight"}
+                            </span>
+                          )}
+                        </div>
+
                         <div className="flex items-center space-x-2">
                           <Clock className="h-4 w-4 text-orange-600" />
-                          <span>{exercise.rest_time || 60}s rest</span>
+                          {editingField?.exerciseId === exercise.id &&
+                          editingField?.field === "rest_time" ? (
+                            <div className="flex items-center space-x-1">
+                              <input
+                                type="number"
+                                value={editingField.value}
+                                onChange={(e) =>
+                                  handleInputChange(e.target.value)
+                                }
+                                onKeyDown={handleKeyPress}
+                                onBlur={handleSaveField}
+                                className="w-16 px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                min="0"
+                                autoFocus
+                              />
+                              <span className="text-xs text-gray-500">s</span>
+                              <button
+                                onClick={handleSaveField}
+                                className="p-1 text-green-600 hover:text-green-700"
+                                disabled={saving}
+                              >
+                                <Check className="h-3 w-3" />
+                              </button>
+                              <button
+                                onClick={handleCancelEdit}
+                                className="p-1 text-red-600 hover:text-red-700"
+                              >
+                                <X className="h-3 w-3" />
+                              </button>
+                            </div>
+                          ) : (
+                            <span
+                              className="cursor-pointer hover:bg-blue-50 px-2 py-1 rounded transition-colors"
+                              onClick={() =>
+                                handleEditField(
+                                  exercise.id,
+                                  "rest_time",
+                                  exercise.rest_time || 60
+                                )
+                              }
+                            >
+                              {exercise.rest_time || 60}s rest
+                            </span>
+                          )}
                         </div>
                       </div>
 
-                      {exercise.notes && (
-                        <p className="mt-3 text-sm text-gray-500 border-t pt-3">
-                          {exercise.notes}
-                        </p>
-                      )}
+                      <div className="mt-3 border-t pt-3">
+                        {editingField?.exerciseId === exercise.id &&
+                        editingField?.field === "notes" ? (
+                          <div className="space-y-2">
+                            <textarea
+                              value={editingField.value}
+                              onChange={(e) =>
+                                handleInputChange(e.target.value)
+                              }
+                              onKeyDown={handleKeyPress}
+                              onBlur={handleSaveField}
+                              className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                              rows="2"
+                              placeholder="Add notes about this exercise..."
+                              autoFocus
+                            />
+                            <div className="flex space-x-1">
+                              <button
+                                onClick={handleSaveField}
+                                className="p-1 text-green-600 hover:text-green-700"
+                                disabled={saving}
+                              >
+                                <Check className="h-3 w-3" />
+                              </button>
+                              <button
+                                onClick={handleCancelEdit}
+                                className="p-1 text-red-600 hover:text-red-700"
+                              >
+                                <X className="h-3 w-3" />
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          <div
+                            className="cursor-pointer hover:bg-blue-50 px-2 py-1 rounded transition-colors"
+                            onClick={() =>
+                              handleEditField(
+                                exercise.id,
+                                "notes",
+                                exercise.notes || ""
+                              )
+                            }
+                          >
+                            {exercise.notes ? (
+                              <p className="text-sm text-gray-500">
+                                {exercise.notes}
+                              </p>
+                            ) : (
+                              <p className="text-sm text-gray-400 italic">
+                                Click to add notes...
+                              </p>
+                            )}
+                          </div>
+                        )}
+                      </div>
                     </div>
 
-                    <div className="flex space-x-2">
-                      <button
-                        onClick={() => handleEditExercise(exercise)}
-                        className="p-2 text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-md transition-colors"
-                      >
-                        <Edit className="h-4 w-4" />
-                      </button>
-                      <button
-                        onClick={() => handleDeleteExercise(exercise.id)}
-                        className="p-2 text-red-600 hover:text-red-700 hover:bg-red-50 rounded-md transition-colors"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
-                    </div>
+                    <button
+                      onClick={() => handleDeleteExercise(exercise.id)}
+                      className="p-2 text-red-600 hover:text-red-700 hover:bg-red-50 rounded-md transition-colors"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
                   </div>
                 </div>
               ))}
@@ -410,133 +689,6 @@ const WorkoutDetail = () => {
                   disabled={adding}
                 >
                   {adding ? "Adding..." : "Add Exercise"}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* Edit Exercise Modal */}
-      {showEditExercise && editingExercise && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-[9999]">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md max-h-[90vh] overflow-y-auto">
-            <h2 className="text-xl font-bold mb-4">Edit Exercise</h2>
-
-            <form onSubmit={handleUpdateExercise} className="space-y-4">
-              <div>
-                <label className="form-label">Exercise Name</label>
-                <ExerciseSearch
-                  onSelect={(name) =>
-                    setEditingExercise({ ...editingExercise, name })
-                  }
-                  placeholder="Search for exercises..."
-                  value={editingExercise.name}
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="form-label">Sets</label>
-                  <input
-                    type="number"
-                    value={editingExercise.sets}
-                    onChange={(e) =>
-                      setEditingExercise({
-                        ...editingExercise,
-                        sets: parseInt(e.target.value),
-                      })
-                    }
-                    className="form-input"
-                    min="1"
-                    required
-                  />
-                </div>
-
-                <div>
-                  <label className="form-label">Reps</label>
-                  <input
-                    type="number"
-                    value={editingExercise.reps}
-                    onChange={(e) =>
-                      setEditingExercise({
-                        ...editingExercise,
-                        reps: parseInt(e.target.value),
-                      })
-                    }
-                    className="form-input"
-                    min="1"
-                    required
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="form-label">Weight (lbs)</label>
-                  <input
-                    type="number"
-                    value={editingExercise.weight}
-                    onChange={(e) =>
-                      setEditingExercise({
-                        ...editingExercise,
-                        weight: e.target.value,
-                      })
-                    }
-                    className="form-input"
-                    placeholder="Optional"
-                  />
-                </div>
-
-                <div>
-                  <label className="form-label">Rest Time (seconds)</label>
-                  <input
-                    type="number"
-                    value={editingExercise.rest_time}
-                    onChange={(e) =>
-                      setEditingExercise({
-                        ...editingExercise,
-                        rest_time: parseInt(e.target.value),
-                      })
-                    }
-                    className="form-input"
-                    min="0"
-                    required
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="form-label">Notes (Optional)</label>
-                <textarea
-                  value={editingExercise.notes}
-                  onChange={(e) =>
-                    setEditingExercise({
-                      ...editingExercise,
-                      notes: e.target.value,
-                    })
-                  }
-                  className="form-input"
-                  rows="3"
-                  placeholder="Any notes about this exercise..."
-                />
-              </div>
-
-              <div className="flex space-x-3 pt-4">
-                <button
-                  type="button"
-                  onClick={() => setShowEditExercise(false)}
-                  className="btn-secondary flex-1"
-                  disabled={editing}
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="btn-primary flex-1"
-                  disabled={editing}
-                >
-                  {editing ? "Saving..." : "Save Changes"}
                 </button>
               </div>
             </form>
