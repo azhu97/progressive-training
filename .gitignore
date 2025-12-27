@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Root node_modules if you have one
 /node_modules/
 
@@ -30,3 +31,10 @@ Thumbs.db
 # Optional:
 .env
 
+=======
+node_modules
+# Keep environment variables out of version control
+.env
+
+/generated/prisma
+>>>>>>> 28b239990dd0e99eed9ef345927a85a3bd383cb6
