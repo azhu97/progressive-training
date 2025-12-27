@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
-import { signup, login, logout } from './api'
+import { signup, login, logout, addWorkout } from './api'
+import WorkoutCharts from './components/WorkoutCharts'
 import './App.css'
 
 function Register({ onSwitch, onAuth }) {
@@ -51,11 +52,95 @@ function Login({ onSwitch, onAuth }) {
 }
 
 function Dashboard({ onLogout }) {
+  const [workoutForm, setWorkoutForm] = useState({ exercise: '', weight: '', reps: '', sets: '' })
+  const [error, setError] = useState('')
+  const [success, setSuccess] = useState('')
+  const [refreshKey, setRefreshKey] = useState(0)
+
+  const handleWorkoutSubmit = async (e) => {
+    e.preventDefault()
+    setError('')
+    setSuccess('')
+    
+    if (!workoutForm.exercise || !workoutForm.weight || !workoutForm.reps || !workoutForm.sets) {
+      setError('Please fill in all fields')
+      return
+    }
+
+    try {
+      const res = await addWorkout({
+        exercise: workoutForm.exercise,
+        weight: parseFloat(workoutForm.weight),
+        reps: parseInt(workoutForm.reps),
+        sets: parseInt(workoutForm.sets)
+      })
+      
+      if (res.error) {
+        setError(res.error)
+      } else {
+        setSuccess('Workout logged successfully!')
+        setWorkoutForm({ exercise: '', weight: '', reps: '', sets: '' })
+        // Trigger chart refresh
+        setRefreshKey(prev => prev + 1)
+      }
+    } catch (err) {
+      setError('Failed to log workout')
+    }
+  }
+
   return (
-    <div>
-      <h2>Dashboard</h2>
-      <button onClick={onLogout}>Logout</button>
-      {/* TODO: Add workout logging, history, and recommendation components here */}
+    <div style={{ padding: '2rem', maxWidth: '1200px', margin: '0 auto' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+        <h2>Dashboard</h2>
+        <button onClick={onLogout} style={{ padding: '0.5rem 1rem', cursor: 'pointer' }}>Logout</button>
+      </div>
+
+      <div style={{ marginBottom: '3rem', padding: '1.5rem', border: '1px solid #ddd', borderRadius: '8px', backgroundColor: '#f9f9f9' }}>
+        <h3 style={{ marginBottom: '1rem' }}>Log Workout</h3>
+        <form onSubmit={handleWorkoutSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
+            <input
+              placeholder="Exercise (e.g., Bench Press)"
+              value={workoutForm.exercise}
+              onChange={e => setWorkoutForm(f => ({ ...f, exercise: e.target.value }))}
+              required
+              style={{ padding: '0.5rem', borderRadius: '4px', border: '1px solid #ccc' }}
+            />
+            <input
+              type="number"
+              step="0.5"
+              placeholder="Weight (lbs)"
+              value={workoutForm.weight}
+              onChange={e => setWorkoutForm(f => ({ ...f, weight: e.target.value }))}
+              required
+              style={{ padding: '0.5rem', borderRadius: '4px', border: '1px solid #ccc' }}
+            />
+            <input
+              type="number"
+              placeholder="Reps"
+              value={workoutForm.reps}
+              onChange={e => setWorkoutForm(f => ({ ...f, reps: e.target.value }))}
+              required
+              style={{ padding: '0.5rem', borderRadius: '4px', border: '1px solid #ccc' }}
+            />
+            <input
+              type="number"
+              placeholder="Sets"
+              value={workoutForm.sets}
+              onChange={e => setWorkoutForm(f => ({ ...f, sets: e.target.value }))}
+              required
+              style={{ padding: '0.5rem', borderRadius: '4px', border: '1px solid #ccc' }}
+            />
+          </div>
+          <button type="submit" style={{ padding: '0.75rem', backgroundColor: '#007bff', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '1rem' }}>
+            Log Workout
+          </button>
+        </form>
+        {error && <div style={{ color: 'red', marginTop: '1rem' }}>{error}</div>}
+        {success && <div style={{ color: 'green', marginTop: '1rem' }}>{success}</div>}
+      </div>
+
+      <WorkoutCharts refreshKey={refreshKey} />
     </div>
   )
 }
