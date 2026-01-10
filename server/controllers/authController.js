@@ -6,7 +6,9 @@ dotenv.config();
 class AuthController {
   constructor(userModel) {
     this.userModel = userModel;
-    this.JWT_SECRET = process.env.JWT_SECRET || "your-super-secret-jwt-key-change-this-in-production";
+    this.JWT_SECRET =
+      process.env.JWT_SECRET ||
+      "your-super-secret-jwt-key-change-this-in-production";
   }
 
   // Register new user

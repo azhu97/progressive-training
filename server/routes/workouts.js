@@ -27,5 +27,10 @@ module.exports = function (workoutController, authController) {
     workoutController.moveWorkout(req, res)
   );
 
+  // Save workout session with multiple exercises
+  router.post("/session", (req, res) =>
+    workoutController.saveWorkoutSession(req, res)
+  );
+
   return router;
 };

@@ -1,29 +1,63 @@
 import React, { useState } from 'react'
-import { signup, login, logout, addWorkout } from './api'
-import WorkoutCharts from './components/WorkoutCharts'
+import { signup, login, logout } from './api'
+import WorkoutSession from './components/WorkoutSession'
+import ExerciseProgressCharts from './components/ExerciseProgressCharts'
 import './App.css'
 
 function Register({ onSwitch, onAuth }) {
   const [form, setForm] = useState({ username: '', email: '', password: '', goal: '' })
   const [error, setError] = useState('')
+  const [loading, setLoading] = useState(false)
+  
+  const handleSubmit = async (e) => {
+    e.preventDefault()
+    setError('')
+    setLoading(true)
+    
+    try {
+      if (!form.username || !form.password) {
+        setError('Username and password are required')
+        setLoading(false)
+        return
+      }
+      
+      if (form.password.length < 6) {
+        setError('Password must be at least 6 characters long')
+        setLoading(false)
+        return
+      }
+      
+      const res = await signup(form)
+      if (res.error) {
+        setError(res.error)
+        console.error("Registration error:", res)
+      } else if (res.token) {
+        // Success - token is saved in signup function, trigger auth
+        onAuth()
+      } else {
+        setError("Registration failed. Please try again.")
+        console.error("Unexpected registration response:", res)
+      }
+    } catch (err) {
+      setError('Failed to register. Please try again.')
+      console.error('Registration error:', err)
+    } finally {
+      setLoading(false)
+    }
+  }
+  
   return (
-    <div>
+    <div className="auth-container">
       <h2>Register</h2>
-      <form onSubmit={async e => {
-        e.preventDefault()
-        setError('')
-        const res = await signup(form)
-        if (res.error) setError(res.error)
-        else onAuth()
-      }}>
-        <input placeholder="Username" value={form.username} onChange={e => setForm(f => ({ ...f, username: e.target.value }))} required />
-        <input placeholder="Email" type="email" value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} required />
-        <input placeholder="Password" type="password" value={form.password} onChange={e => setForm(f => ({ ...f, password: e.target.value }))} required />
-        <input placeholder="Goal (e.g. strength)" value={form.goal} onChange={e => setForm(f => ({ ...f, goal: e.target.value }))} />
-        <button type="submit">Register</button>
+      <form className="auth-form" onSubmit={handleSubmit}>
+        <input placeholder="Username" value={form.username} onChange={e => setForm(f => ({ ...f, username: e.target.value }))} required disabled={loading} />
+        <input placeholder="Email (optional)" type="email" value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} disabled={loading} />
+        <input placeholder="Password (min 6 characters)" type="password" value={form.password} onChange={e => setForm(f => ({ ...f, password: e.target.value }))} required disabled={loading} />
+        <input placeholder="Goal (optional, e.g. strength)" value={form.goal} onChange={e => setForm(f => ({ ...f, goal: e.target.value }))} disabled={loading} />
+        <button type="submit" disabled={loading}>{loading ? 'Registering...' : 'Register'}</button>
       </form>
-      {error && <div style={{ color: 'red' }}>{error}</div>}
-      <p>Already have an account? <button onClick={onSwitch}>Login</button></p>
+      {error && <div className="auth-error">{error}</div>}
+      <p className="auth-switch">Already have an account? <button onClick={onSwitch} disabled={loading}>Login</button></p>
     </div>
   )
 }
@@ -31,116 +65,147 @@ function Register({ onSwitch, onAuth }) {
 function Login({ onSwitch, onAuth }) {
   const [form, setForm] = useState({ email: '', password: '' })
   const [error, setError] = useState('')
+  const [loading, setLoading] = useState(false)
+  
+  const handleSubmit = async (e) => {
+    e.preventDefault()
+    setError('')
+    setLoading(true)
+    
+    try {
+      const res = await login(form)
+      if (res.error) {
+        setError(res.error)
+        console.error("Login error:", res)
+      } else if (res.token) {
+        // Success - token is saved in login function, trigger auth
+        onAuth()
+      } else {
+        setError("Login failed. Please try again.")
+        console.error("Unexpected login response:", res)
+      }
+    } catch (err) {
+      setError('Failed to login. Please try again.')
+      console.error('Login error:', err)
+    } finally {
+      setLoading(false)
+    }
+  }
+  
   return (
-    <div>
+    <div className="auth-container">
       <h2>Login</h2>
-      <form onSubmit={async e => {
-        e.preventDefault()
-        setError('')
-        const res = await login(form)
-        if (res.error) setError(res.error)
-        else onAuth()
-      }}>
-        <input placeholder="Email" type="email" value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} required />
-        <input placeholder="Password" type="password" value={form.password} onChange={e => setForm(f => ({ ...f, password: e.target.value }))} required />
-        <button type="submit">Login</button>
+      <form className="auth-form" onSubmit={handleSubmit}>
+        <input placeholder="Username or Email" value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} required disabled={loading} />
+        <input placeholder="Password" type="password" value={form.password} onChange={e => setForm(f => ({ ...f, password: e.target.value }))} required disabled={loading} />
+        <button type="submit" disabled={loading}>{loading ? 'Logging in...' : 'Login'}</button>
       </form>
-      {error && <div style={{ color: 'red' }}>{error}</div>}
-      <p>Don't have an account? <button onClick={onSwitch}>Register</button></p>
+      {error && <div className="auth-error">{error}</div>}
+      <p className="auth-switch">Don't have an account? <button onClick={onSwitch} disabled={loading}>Register</button></p>
     </div>
   )
 }
 
 function Dashboard({ onLogout }) {
-  const [workoutForm, setWorkoutForm] = useState({ exercise: '', weight: '', reps: '', sets: '' })
-  const [error, setError] = useState('')
-  const [success, setSuccess] = useState('')
+  const [activeView, setActiveView] = useState('home') // 'home', 'session', 'progress'
+  const [sessionActive, setSessionActive] = useState(false)
   const [refreshKey, setRefreshKey] = useState(0)
 
-  const handleWorkoutSubmit = async (e) => {
-    e.preventDefault()
-    setError('')
-    setSuccess('')
-    
-    if (!workoutForm.exercise || !workoutForm.weight || !workoutForm.reps || !workoutForm.sets) {
-      setError('Please fill in all fields')
-      return
-    }
+  const handleStartSession = () => {
+    setSessionActive(true)
+    setActiveView('session')
+  }
 
-    try {
-      const res = await addWorkout({
-        exercise: workoutForm.exercise,
-        weight: parseFloat(workoutForm.weight),
-        reps: parseInt(workoutForm.reps),
-        sets: parseInt(workoutForm.sets)
-      })
-      
-      if (res.error) {
-        setError(res.error)
-      } else {
-        setSuccess('Workout logged successfully!')
-        setWorkoutForm({ exercise: '', weight: '', reps: '', sets: '' })
-        // Trigger chart refresh
-        setRefreshKey(prev => prev + 1)
-      }
-    } catch (err) {
-      setError('Failed to log workout')
+  const handleSessionSaved = () => {
+    setSessionActive(false)
+    setActiveView('home')
+    setRefreshKey(prev => prev + 1)
+  }
+
+  const handleSessionCancel = () => {
+    if (window.confirm('Are you sure you want to cancel this workout session? All unsaved data will be lost.')) {
+      setSessionActive(false)
+      setActiveView('home')
     }
   }
 
-  return (
-    <div style={{ padding: '2rem', maxWidth: '1200px', margin: '0 auto' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
-        <h2>Dashboard</h2>
-        <button onClick={onLogout} style={{ padding: '0.5rem 1rem', cursor: 'pointer' }}>Logout</button>
-      </div>
+  const renderView = () => {
+    if (activeView === 'session' && sessionActive) {
+      return (
+        <WorkoutSession
+          onSessionSaved={handleSessionSaved}
+          onCancel={handleSessionCancel}
+        />
+      )
+    }
 
-      <div style={{ marginBottom: '3rem', padding: '1.5rem', border: '1px solid #ddd', borderRadius: '8px', backgroundColor: '#f9f9f9' }}>
-        <h3 style={{ marginBottom: '1rem' }}>Log Workout</h3>
-        <form onSubmit={handleWorkoutSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
-            <input
-              placeholder="Exercise (e.g., Bench Press)"
-              value={workoutForm.exercise}
-              onChange={e => setWorkoutForm(f => ({ ...f, exercise: e.target.value }))}
-              required
-              style={{ padding: '0.5rem', borderRadius: '4px', border: '1px solid #ccc' }}
-            />
-            <input
-              type="number"
-              step="0.5"
-              placeholder="Weight (lbs)"
-              value={workoutForm.weight}
-              onChange={e => setWorkoutForm(f => ({ ...f, weight: e.target.value }))}
-              required
-              style={{ padding: '0.5rem', borderRadius: '4px', border: '1px solid #ccc' }}
-            />
-            <input
-              type="number"
-              placeholder="Reps"
-              value={workoutForm.reps}
-              onChange={e => setWorkoutForm(f => ({ ...f, reps: e.target.value }))}
-              required
-              style={{ padding: '0.5rem', borderRadius: '4px', border: '1px solid #ccc' }}
-            />
-            <input
-              type="number"
-              placeholder="Sets"
-              value={workoutForm.sets}
-              onChange={e => setWorkoutForm(f => ({ ...f, sets: e.target.value }))}
-              required
-              style={{ padding: '0.5rem', borderRadius: '4px', border: '1px solid #ccc' }}
-            />
+    if (activeView === 'progress') {
+      return (
+        <ExerciseProgressCharts refreshKey={refreshKey} />
+      )
+    }
+
+    // Home view
+    return (
+      <div className="dashboard-home">
+        <div className="welcome-section">
+          <h2>Welcome to Your Workout Tracker</h2>
+          <p>Track your workouts, monitor progress, and achieve your fitness goals.</p>
+        </div>
+
+        <div className="action-cards">
+          <div className="action-card" onClick={handleStartSession}>
+            <div className="card-icon">🏋️</div>
+            <h3>Start New Workout</h3>
+            <p>Create a new workout session and track your exercises in real-time.</p>
+            <button className="card-button">Start Session</button>
           </div>
-          <button type="submit" style={{ padding: '0.75rem', backgroundColor: '#007bff', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '1rem' }}>
-            Log Workout
-          </button>
-        </form>
-        {error && <div style={{ color: 'red', marginTop: '1rem' }}>{error}</div>}
-        {success && <div style={{ color: 'green', marginTop: '1rem' }}>{success}</div>}
+
+          <div className="action-card" onClick={() => setActiveView('progress')}>
+            <div className="card-icon">📊</div>
+            <h3>View Progress</h3>
+            <p>Analyze your workout progress with detailed charts for each exercise.</p>
+            <button className="card-button">View Charts</button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="dashboard-container">
+      <div className="dashboard-header">
+        <h2>Workout Tracker</h2>
+        <div className="header-actions">
+          <nav className="main-nav">
+            <button 
+              className={`nav-button ${activeView === 'home' ? 'active' : ''}`}
+              onClick={() => setActiveView('home')}
+            >
+              Home
+            </button>
+            {sessionActive && (
+              <button 
+                className={`nav-button ${activeView === 'session' ? 'active' : ''}`}
+                onClick={() => setActiveView('session')}
+              >
+                Active Workout
+              </button>
+            )}
+            <button 
+              className={`nav-button ${activeView === 'progress' ? 'active' : ''}`}
+              onClick={() => setActiveView('progress')}
+            >
+              Progress Charts
+            </button>
+          </nav>
+          <button className="logout-btn" onClick={onLogout}>Logout</button>
+        </div>
       </div>
 
-      <WorkoutCharts refreshKey={refreshKey} />
+      <div className="dashboard-content">
+        {renderView()}
+      </div>
     </div>
   )
 }
@@ -153,10 +218,14 @@ export default function App() {
   const handleLogout = () => { logout(); setAuth(false) }
 
   if (!auth) {
-    return showLogin ? (
-      <Login onSwitch={() => setShowLogin(false)} onAuth={handleAuth} />
-    ) : (
-      <Register onSwitch={() => setShowLogin(true)} onAuth={handleAuth} />
+    return (
+      <div className="auth-wrapper">
+        {showLogin ? (
+          <Login onSwitch={() => setShowLogin(false)} onAuth={handleAuth} />
+        ) : (
+          <Register onSwitch={() => setShowLogin(true)} onAuth={handleAuth} />
+        )}
+      </div>
     )
   }
   return <Dashboard onLogout={handleLogout} />

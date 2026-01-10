@@ -14,14 +14,20 @@ function WorkoutCharts({ refreshKey = 0 }) {
   const loadWorkouts = async () => {
     try {
       setLoading(true);
+      setError('');
       const data = await getWorkouts();
       if (data.error) {
         setError(data.error);
-      } else {
+        setWorkouts([]);
+      } else if (Array.isArray(data)) {
         setWorkouts(data);
+      } else {
+        setError('Invalid data format received');
+        setWorkouts([]);
       }
     } catch (err) {
-      setError('Failed to load workouts');
+      setError('Failed to load workouts: ' + err.message);
+      setWorkouts([]);
     } finally {
       setLoading(false);
     }
@@ -29,16 +35,22 @@ function WorkoutCharts({ refreshKey = 0 }) {
 
   // Group workouts by exercise
   const workoutsByExercise = workouts.reduce((acc, workout) => {
+    if (!workout || !workout.exercise) return acc;
+    
     const exercise = workout.exercise;
     if (!acc[exercise]) {
       acc[exercise] = [];
     }
+    
+    // Handle date - it might be a string or Date object
+    const workoutDate = workout.date ? new Date(workout.date) : new Date();
+    
     acc[exercise].push({
-      date: new Date(workout.date).toLocaleDateString(),
-      dateSort: new Date(workout.date),
-      weight: workout.weight,
-      reps: workout.reps,
-      sets: workout.sets,
+      date: workoutDate.toLocaleDateString(),
+      dateSort: workoutDate,
+      weight: workout.weight || 0,
+      reps: workout.reps || 0,
+      sets: workout.sets || 0,
     });
     return acc;
   }, {});

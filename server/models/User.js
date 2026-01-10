@@ -1,22 +1,3 @@
-<<<<<<< HEAD
-const mongoose = require("mongoose");
-
-const UserSchema = new mongoose.Schema({
-  username: { type: String, required: true, unique: true },
-  email: { type: String, required: true, unique: true },
-  password: { type: String, required: true },
-  goal: { type: String }, // e.g., 'strength', 'endurance', 'hypertrophy', etc.
-  latestRecommendation: {
-    exercise: String,
-    weight: Number,
-    reps: Number,
-    sets: Number,
-    date: Date
-  }
-});
-
-module.exports = mongoose.model("User", UserSchema);
-=======
 const bcrypt = require("bcryptjs");
 
 class User {
@@ -66,4 +47,3 @@ class User {
 }
 
 module.exports = User;
->>>>>>> 28b239990dd0e99eed9ef345927a85a3bd383cb6
